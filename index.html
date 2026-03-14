@@ -217,6 +217,10 @@
 </div>
 
 <script>
+    // --- Global State ---
+    let fabricCanvas;
+    let isBgInitialized = false;
+
     // --- UI Logic: Tab Switching ---
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -349,8 +353,6 @@
     const bgCanvas = document.getElementById('bg-canvas');
     const bgCtx = bgCanvas.getContext('2d');
     const zenInstructions = document.getElementById('zenInstructions');
-    let isBgInitialized = false;
-    let fabricCanvas;
     const physicsStones = [];
     const particles = [];
     let lastLoopTime = performance.now();
