@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Noah Michael Cowart | Interactive Portfolio</title>
+    <!-- Load Fabric.js for the Zen Garden -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #c5a059;
+            --bg-light: #f7fafc;
+            --text-main: #2d3748;
+            --ui-bg: #ffffff;
+            --font-stack: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-stack); }
+        
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* Navigation Tabs */
+        nav {
+            background: var(--primary-color);
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            position: relative;
+            z-index: 100;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        nav button {
+            background: transparent;
+            color: #fff;
+            border: 2px solid transparent;
+            padding: 0.5rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        nav button.active {
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+        }
+
+        /* Panels */
+        .panel {
+            display: none;
+            min-height: calc(100vh - 64px);
+            position: relative;
+        }
+        .panel.active { display: block; }
+
+        /* Document Layer (Underneath Canvas) */
+        .document-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            position: relative;
+            z-index: 1; /* Below Canvas */
+            user-select: none; /* Prevent text selection while drawing */
+        }
+
+        .document-content h1 { color: var(--primary-color); margin-bottom: 1rem; font-size: 2.5rem; }
+        .document-content h2 { color: var(--secondary-color); margin-bottom: 2rem; }
+        .document-content p, .document-content li { margin-bottom: 1rem; line-height: 1.8; font-size: 1.1rem; }
+
+        /* Canvas Overlay */
+        #annotationCanvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+            cursor: crosshair;
+            touch-action: none; /* Crucial for mobile drawing */
+        }
+
+        /* Floating Toolbar */
+        .toolbar {
+            position: fixed;
+            bottom: 2rem; left: 50%;
+            transform: translateX(-50%);
+            background: var(--ui-bg);
+            padding: 0.75rem;
+            border-radius: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: flex;
+            gap: 0.5rem;
+            z-index: 100;
+            border: 1px solid #e2e8f0;
+        }
+
+        .tool-btn {
+            background: #edf2f7;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-main);
+            transition: background 0.2s;
+        }
+
+        .tool-btn.active {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        .tool-btn.clear { background: #fed7d7; color: #c53030; }
+
+        /* Zen Garden Styles */
+        #zen-wrapper {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 64px);
+            overflow: hidden;
+            background: #e8dcc8;
+        }
+
+        #bg-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 0;
+        }
+
+        #fg-canvas-wrapper {
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 1;
+            width: 100%; height: 100%;
+        }
+
+        .zen-instructions {
+            position: absolute;
+            top: 2rem; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.85);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            color: #2d3748;
+            font-weight: 600;
+            text-align: center;
+            pointer-events: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 10;
+            transition: opacity 0.5s ease;
+            line-height: 1.5;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <button class="tab-btn active" data-target="panel-masterpiece">Document Annotations</button>
+    <button class="tab-btn" data-target="panel-bohm">Bohm Law Group</button>
+    <button class="tab-btn" data-target="panel-zen">Zen Garden</button>
+</nav>
+
+<div id="panel-masterpiece" class="panel active">
+    <div class="document-content">
+        <h1>Noah Michael Cowart</h1>
+        <h2>Trial & Litigation Experience</h2>
+        <p>This document is a draft of our recent litigation successes. Please use the tools below to annotate, highlight, or strike through any sections before we finalize the portfolio.</p>
+        
+        <div style="background: #fff; padding: 2rem; border-left: 4px solid var(--primary-color); margin-top: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h3 style="color: var(--primary-color); margin-bottom: 1rem;">$78,000,000+ Verdict: Brantley v. Zurich</h3>
+            <p>A multi-plaintiff verdict representing former employees of Zurich American Insurance Company. The complex three-week trial required extensive organization and narrative control.</p>
+        </div>
+
+        <div style="background: #fff; padding: 2rem; border-left: 4px solid var(--primary-color); margin-top: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h3 style="color: var(--primary-color); margin-bottom: 1rem;">$11,183,000 Verdict: Armstrong v. Life Care Centers</h3>
+            <p>Achieved an eight-figure jury verdict for a whistleblower wrongfully terminated and defamed after reporting substandard patient care. Included a massive punitive damages award.</p>
+        </div>
+    </div>
+    
+    <canvas id="annotationCanvas"></canvas>
+
+    <div class="toolbar">
+        <button class="tool-btn active" data-tool="calligraphy">Calligraphy</button>
+        <button class="tool-btn" data-tool="highlighter">Highlighter</button>
+        <button class="tool-btn" data-tool="annotation">Annotation Pen</button>
+        <button class="tool-btn" data-tool="whiteout">White-Out</button>
+        <button class="tool-btn clear" id="clearCanvasBtn">Clear Edits</button>
+    </div>
+</div>
+
+<div id="panel-bohm" class="panel">
+    <div class="document-content">
+        <h1>Bohm Law Group, Inc.</h1>
+        <h2>Advocates for Justice</h2>
+        <p>Bohm Law Group has a track record of taking on massive corporations and government entities to protect the rights of individuals. Focusing on high-stakes civil litigation, employment law, discrimination, and wrongful termination.</p>
+        <p>This section is currently locked for review and serves as a static reference for firm-level achievements.</p>
+    </div>
+</div>
+
+<div id="panel-zen" class="panel">
+    <div id="zen-wrapper">
+        <canvas id="bg-canvas"></canvas>
+        <div id="fg-canvas-wrapper">
+            <canvas id="c"></canvas>
+        </div>
+        <div id="zenInstructions" class="zen-instructions">
+            Drag to rake the sand.<br>
+            Tap to drop a stone. Drag stones to plow.
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- UI Logic: Tab Switching ---
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            
+            e.target.classList.add('active');
+            document.getElementById(e.target.dataset.target).classList.add('active');
+            
+            // Resize canvases when tab becomes visible
+            resizeCanvas();
+            if (e.target.dataset.target === 'panel-zen') {
+                initZenGarden();
+            }
+        });
+    });
+
+    // --- Annotation Canvas Engine ---
+    const annotationCanvas = document.getElementById('annotationCanvas');
+    const annotationCtx = annotationCanvas.getContext('2d', { willReadFrequently: true });
+    let isDrawing = false;
+    let lastX = 0; let lastY = 0;
+    let lastTime = 0;
+    
+    // Tool settings
+    let currentTool = 'calligraphy';
+    const tools = {
+        calligraphy: { color: '#1a202c', alpha: 1.0, baseWidth: 6, mode: 'source-over', dynamic: true },
+        highlighter: { color: '#fef08a', alpha: 0.2, baseWidth: 25, mode: 'multiply', dynamic: false },
+        annotation: { color: '#e53e3e', alpha: 1.0, baseWidth: 3, mode: 'source-over', dynamic: false },
+        whiteout: { color: '#f7fafc', alpha: 1.0, baseWidth: 30, mode: 'source-over', dynamic: false } // Matches bg-light
+    };
+
+    function resizeCanvas() {
+        const panel = document.getElementById('panel-masterpiece');
+        annotationCanvas.width = panel.scrollWidth;
+        annotationCanvas.height = panel.scrollHeight;
+        annotationCtx.lineCap = 'round';
+        annotationCtx.lineJoin = 'round';
+
+        // Handle Zen Canvas resize if initialized
+        if (typeof fabricCanvas !== 'undefined') {
+            const zenWrapper = document.getElementById('zen-wrapper');
+            resizeBackground();
+            fabricCanvas.setWidth(zenWrapper.offsetWidth);
+            fabricCanvas.setHeight(zenWrapper.offsetHeight);
+        }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas(); // Initial setup
+
+    // Tool switching
+    document.querySelectorAll('[data-tool]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            currentTool = e.target.dataset.tool;
+        });
+    });
+
+    document.getElementById('clearCanvasBtn').addEventListener('click', () => {
+        annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
+    });
+
+    // Drawing Logic
+    function startDrawing(e) {
+        if (document.getElementById('panel-masterpiece').classList.contains('active')) {
+            isDrawing = true;
+            const pos = getPos(e);
+            lastX = pos.x; lastY = pos.y;
+            lastTime = Date.now();
+        }
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault(); // Prevent scrolling while drawing on mobile
+        const pos = getPos(e);
+        const currentTime = Date.now();
+        
+        const tool = tools[currentTool];
+        annotationCtx.strokeStyle = tool.color;
+        annotationCtx.globalAlpha = tool.alpha;
+        annotationCtx.globalCompositeOperation = tool.mode;
+
+        // Calligraphy Physics: Thinner line when moving faster
+        if (tool.dynamic) {
+            const distance = Math.sqrt(Math.pow(pos.x - lastX, 2) + Math.pow(pos.y - lastY, 2));
+            const timeDelta = currentTime - lastTime || 1;
+            const velocity = distance / timeDelta;
+            
+            // Adjust width inversely to velocity, clamped between 2 and 12
+            let dynamicWidth = Math.max(2, Math.min(12, tool.baseWidth / (velocity + 0.5)));
+            annotationCtx.lineWidth = dynamicWidth;
+        } else {
+            annotationCtx.lineWidth = tool.baseWidth;
+        }
+
+        annotationCtx.beginPath();
+        annotationCtx.moveTo(lastX, lastY);
+        annotationCtx.lineTo(pos.x, pos.y);
+        annotationCtx.stroke();
+
+        lastX = pos.x; lastY = pos.y;
+        lastTime = currentTime;
+    }
+
+    function stopDrawing() { isDrawing = false; }
+
+    function getPos(e) {
+        const rect = annotationCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: clientX - rect.left + window.scrollX,
+            y: clientY - rect.top + window.scrollY
+        };
+    }
+
+    annotationCanvas.addEventListener('mousedown', startDrawing);
+    annotationCanvas.addEventListener('mousemove', draw);
+    annotationCanvas.addEventListener('mouseup', stopDrawing);
+    annotationCanvas.addEventListener('mouseout', stopDrawing);
+    
+    annotationCanvas.addEventListener('touchstart', startDrawing, {passive: false});
+    annotationCanvas.addEventListener('touchmove', draw, {passive: false});
+    annotationCanvas.addEventListener('touchend', stopDrawing);
+
+    // --- Zen Garden Engine (Fabric.js) ---
+    const bgCanvas = document.getElementById('bg-canvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    const zenInstructions = document.getElementById('zenInstructions');
+    let isBgInitialized = false;
+    let fabricCanvas;
+    const physicsStones = [];
+    const particles = [];
+    let lastLoopTime = performance.now();
+
+    function resizeBackground() {
+        const zenWrapper = document.getElementById('zen-wrapper');
+        let oldData = null;
+        if (isBgInitialized) {
+            let tempCanvas = document.createElement('canvas');
+            tempCanvas.width = bgCanvas.width;
+            tempCanvas.height = bgCanvas.height;
+            tempCanvas.getContext('2d').drawImage(bgCanvas, 0, 0);
+            oldData = tempCanvas;
+        }
+
+        bgCanvas.width = zenWrapper.offsetWidth;
+        bgCanvas.height = zenWrapper.offsetHeight;
+        
+        bgCtx.fillStyle = '#e8dcc8';
+        bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+        
+        const particlesToDraw = (bgCanvas.width * bgCanvas.height) / 60;
+        for(let i = 0; i < particlesToDraw; i++) {
+            bgCtx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)';
+            bgCtx.fillRect(Math.random() * bgCanvas.width, Math.random() * bgCanvas.height, 1, 1);
+        }
+
+        if (oldData) {
+            bgCtx.drawImage(oldData, 0, 0);
+        }
+        isBgInitialized = true;
+    }
+
+    function drawRakeLine(x1, y1, x2, y2, width, opacity) {
+        bgCtx.beginPath();
+        bgCtx.moveTo(x1 - 1, y1 - 1);
+        bgCtx.lineTo(x2 - 1, y2 - 1);
+        bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        bgCtx.lineWidth = width / 2;
+        bgCtx.lineCap = 'round';
+        bgCtx.stroke();
+
+        bgCtx.beginPath();
+        bgCtx.moveTo(x1, y1);
+        bgCtx.lineTo(x2, y2);
+        bgCtx.strokeStyle = `rgba(0, 0, 0, ${opacity})`;
+        bgCtx.lineWidth = width;
+        bgCtx.lineCap = 'round';
+        bgCtx.stroke();
+    }
+
+    function drawCrater(x, y, radius) {
+        bgCtx.save();
+        bgCtx.beginPath();
+        bgCtx.ellipse(x, y, radius * 1.2, radius * 0.8, 0, 0, Math.PI * 2);
+        bgCtx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+        bgCtx.fill();
+        
+        bgCtx.beginPath();
+        bgCtx.ellipse(x, y, radius * 1.4, radius * 1.0, 0, 0, Math.PI * 2);
+        bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        bgCtx.lineWidth = 3;
+        bgCtx.stroke();
+        bgCtx.restore();
+    }
+
+    function elasticEaseOut(t) {
+        const c4 = (2 * Math.PI) / 3;
+        return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+    }
+
+    function gameLoop(time) {
+        if (!document.getElementById('panel-zen').classList.contains('active')) return;
+        
+        let dt = (time - lastLoopTime) / 1000;
+        if (dt > 0.1) dt = 0.1; 
+        lastLoopTime = time;
+
+        physicsStones.forEach(s => {
+            if (s.state === 'falling') {
+                s.vy += 2800 * dt; 
+                s.y += s.vy * dt;
+                
+                let heightAboveGround = s.targetY - s.y;
+
+                if (s.y >= s.targetY) {
+                    s.y = s.targetY;
+                    s.state = 'settling';
+                    s.bounceStart = time;
+                    s.mesh.set({ selectable: true });
+                    drawCrater(s.x, s.y, s.mesh.radius);
+                    
+                    s.mesh.shadow.blur = 12;
+                    s.mesh.shadow.offsetX = 5;
+                    s.mesh.shadow.offsetY = 8;
+                    s.mesh.shadow.color = 'rgba(0,0,0,0.6)';
+                    s.mesh.dirty = true;
+                } else {
+                    s.mesh.shadow.blur = Math.max(5, heightAboveGround / 4);
+                    s.mesh.shadow.offsetX = Math.min(20, heightAboveGround / 10 + 2);
+                    s.mesh.shadow.offsetY = Math.min(30, heightAboveGround / 5 + 2);
+                    s.mesh.dirty = true;
+
+                    let stretch = Math.min(1.4, 1 + s.vy / 2500);
+                    s.mesh.set({ scaleY: stretch, scaleX: 1 / stretch });
+                }
+                s.mesh.set({ top: s.y });
+                
+            } else if (s.state === 'settling') {
+                let t = (time - s.bounceStart) / 500;
+                if (t >= 1) {
+                    s.state = 'idle';
+                    s.mesh.set({ scaleX: 1, scaleY: 1 });
+                } else {
+                    let scale = 1 + (elasticEaseOut(t) - 1) * 0.35;
+                    s.mesh.set({ scaleX: scale, scaleY: scale });
+                }
+            }
+        });
+
+        particles.forEach(p => {
+            p.vy += (25 * p.mass) * dt; 
+            if (p.vy > 90) p.vy = 90;
+            
+            p.phase += dt * 1.5;
+            p.x += Math.sin(p.phase) * 45 * dt; 
+            p.y += p.vy * dt;
+            
+            if (p.y > bgCanvas.height + 30) {
+                p.y = -30;
+                p.x = Math.random() * bgCanvas.width;
+                p.vy = 10;
+            }
+            
+            p.mesh.set({
+                left: p.x, 
+                top: p.y,
+                scaleX: p.baseScale * (0.4 + 0.6 * Math.abs(Math.cos(p.phase * 2.2))),
+                angle: p.mesh.angle + (Math.sin(p.phase) * 50 * dt)
+            });
+        });
+
+        fabricCanvas.renderAll();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function spawnStone(x, targetY) {
+        let r = 22 + Math.random() * 18;
+        let points = [];
+        let numPoints = 10;
+        for(let i=0; i<numPoints; i++) {
+            let angle = (i / numPoints) * Math.PI * 2;
+            let rad = r * (0.85 + Math.random() * 0.3);
+            points.push({ x: Math.cos(angle) * rad, y: Math.sin(angle) * rad });
+        }
+
+        let stoneMesh = new fabric.Polygon(points, {
+            left: x, top: -r - 100,
+            originX: 'center', originY: 'center',
+            fill: '#6b7280', 
+            selectable: false,
+            hasControls: false,
+            hasBorders: false,
+            hoverCursor: 'grab',
+            moveCursor: 'grabbing',
+            shadow: new fabric.Shadow({
+                color: 'rgba(0,0,0,0.3)', blur: 20, offsetX: 10, offsetY: 20
+            })
+        });
+        
+        try {
+            stoneMesh.set('fill', new fabric.Gradient({
+                type: 'radial',
+                coords: { x1: -r/3, y1: -r/3, r1: 0, x2: 0, y2: 0, r2: r * 1.5 },
+                colorStops: [
+                    { offset: 0, color: '#9ca3af' },
+                    { offset: 1, color: '#374151' }
+                ]
+            }));
+        } catch(e) {}
+
+        stoneMesh.isStone = true;
+        stoneMesh.radius = r;
+        fabricCanvas.add(stoneMesh);
+        
+        physicsStones.push({
+            mesh: stoneMesh,
+            x: x, y: stoneMesh.top, targetY: targetY,
+            vy: 0, mass: r,
+            state: 'falling'
+        });
+    }
+
+    function initPetals() {
+        for(let i = 0; i < 25; i++) {
+            let scale = 0.4 + Math.random() * 0.6;
+            let petalMesh = new fabric.Path('M 0 -12 C 12 -12, 18 6, 0 18 C -18 6, -12 -12, 0 -12 Z', {
+                fill: '#fbcfe8',
+                left: Math.random() * bgCanvas.width,
+                top: Math.random() * bgCanvas.height - bgCanvas.height,
+                originX: 'center', originY: 'center',
+                selectable: false, evented: false,
+                opacity: 0.75 + Math.random() * 0.2,
+                shadow: new fabric.Shadow({
+                    color: 'rgba(0,0,0,0.1)', blur: 3, offsetX: 2, offsetY: 6
+                })
+            });
+            
+            petalMesh.isPetal = true;
+            fabricCanvas.add(petalMesh);
+            
+            particles.push({
+                mesh: petalMesh,
+                x: petalMesh.left, y: petalMesh.top,
+                vy: 10 + Math.random() * 40,
+                mass: 0.6 + Math.random() * 0.4,
+                phase: Math.random() * Math.PI * 2,
+                baseScale: scale
+            });
+        }
+    }
+
+    function initZenGarden() {
+        if (!fabricCanvas) {
+            const zenWrapper = document.getElementById('zen-wrapper');
+            resizeBackground();
+            
+            fabricCanvas = new fabric.Canvas('c', {
+                width: zenWrapper.offsetWidth,
+                height: zenWrapper.offsetHeight,
+                selection: false,
+                preserveObjectStacking: true
+            });
+
+            let interactionStarted = false;
+            let isRaking = false;
+            let lastPoint = null;
+            let lastRakeTime = 0;
+            let downPoint = null;
+            let downTime = 0;
+
+            fabricCanvas.on('mouse:down', function(o) {
+                if (!interactionStarted) {
+                    zenInstructions.style.opacity = '0';
+                    interactionStarted = true;
+                }
+                if (o.target) return;
+
+                downPoint = fabricCanvas.getPointer(o.e);
+                downTime = performance.now();
+                isRaking = true;
+                lastPoint = downPoint;
+                lastRakeTime = downTime;
+            });
+
+            fabricCanvas.on('mouse:move', function(o) {
+                if (!isRaking) return;
+                let currentPoint = fabricCanvas.getPointer(o.e);
+                let currentTime = performance.now();
+                let dt = currentTime - lastRakeTime;
+                if (dt === 0) return;
+
+                let dx = currentPoint.x - lastPoint.x;
+                let dy = currentPoint.y - lastPoint.y;
+                let dist = Math.hypot(dx, dy);
+                
+                if (dist < 2) return;
+
+                let velocity = dist / dt;
+                let w = 28 - (velocity * 10);
+                w = Math.max(6, Math.min(w, 28));
+                let opacity = Math.max(0.08, Math.min(0.35, 0.45 - velocity * 0.1));
+
+                drawRakeLine(lastPoint.x, lastPoint.y, currentPoint.x, currentPoint.y, w, opacity);
+
+                lastPoint = currentPoint;
+                lastRakeTime = currentTime;
+            });
+
+            fabricCanvas.on('mouse:up', function(o) {
+                if (!isRaking) return;
+                isRaking = false;
+                let upPoint = fabricCanvas.getPointer(o.e);
+                let upTime = performance.now();
+                
+                let dist = Math.hypot(upPoint.x - downPoint.x, upPoint.y - downPoint.y);
+                if (dist < 5 && (upTime - downTime) < 300) {
+                    spawnStone(upPoint.x, upPoint.y);
+                }
+            });
+
+            fabricCanvas.on('object:moving', function(e) {
+                let obj = e.target;
+                if (!obj.isStone) return;
+                
+                let currentPoint = { x: obj.left, y: obj.top };
+                if (!obj.lastDrawPos) obj.lastDrawPos = { x: obj.left, y: obj.top };
+                let drawDx = currentPoint.x - obj.lastDrawPos.x;
+                let drawDy = currentPoint.y - obj.lastDrawPos.y;
+                
+                if (Math.hypot(drawDx, drawDy) > 4) {
+                    drawRakeLine(obj.lastDrawPos.x, obj.lastDrawPos.y, currentPoint.x, currentPoint.y, obj.radius * 1.6, 0.3);
+                    obj.lastDrawPos = currentPoint;
+                }
+                
+                if (!obj.lastPos) obj.lastPos = { x: obj.left, y: obj.top };
+                let px = currentPoint.x - obj.lastPos.x;
+                let py = currentPoint.y - obj.lastPos.y;
+                let moveDist = Math.hypot(px, py);
+                
+                let maxMove = 3;
+                if (moveDist > maxMove) {
+                    obj.set({
+                        left: obj.lastPos.x + (px / moveDist) * maxMove,
+                        top: obj.lastPos.y + (py / moveDist) * maxMove
+                    });
+                }
+                
+                obj.bringToFront(); 
+                obj.lastPos = { x: obj.left, y: obj.top };
+            });
+
+            initPetals();
+            requestAnimationFrame(gameLoop);
+        }
+    }
+
+    // Initialize the background size properly on load
+    setTimeout(resizeCanvas, 100);
+</script>
+
+</body>
+</html>
