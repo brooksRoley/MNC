@@ -83,14 +83,15 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 10;
-            cursor: crosshair;
-            touch-action: none; /* Crucial for mobile drawing */
+            cursor: default;
+            touch-action: auto;
+            pointer-events: none; /* Default: none tool, normal scroll */
         }
 
         /* Floating Toolbar */
         .toolbar {
             position: fixed;
-            bottom: 2rem; left: 50%;
+            bottom: 0; left: 50%;
             transform: translateX(-50%);
             background: var(--ui-bg);
             padding: 0.75rem;
@@ -185,7 +186,7 @@
                 font-size: 1.8rem;
             }
             .toolbar {
-                bottom: 1rem;
+                bottom: 0;
                 padding: 0.5rem;
                 border-radius: 15px;
                 gap: 0.4rem;
@@ -225,11 +226,11 @@
     <canvas id="annotationCanvas"></canvas>
 
     <div class="toolbar">
-        <button class="tool-btn active" data-tool="calligraphy">Calligraphy</button>
+        <button class="tool-btn active" data-tool="none">None</button>
+        <button class="tool-btn" data-tool="calligraphy">Calligraphy</button>
         <button class="tool-btn" data-tool="highlighter">Highlighter</button>
         <button class="tool-btn" data-tool="annotation">Pen</button>
         <button class="tool-btn" data-tool="whiteout">Whiteout</button>
-        <button class="tool-btn" data-tool="pan">Scroll</button>
         <button class="tool-btn clear" id="clearCanvasBtn">Clear</button>
     </div>
 </div>
@@ -297,13 +298,13 @@
     };
 
     // Tool settings
-    let currentTool = 'calligraphy';
+    let currentTool = 'none';
     const tools = {
+        none: { color: 'transparent', alpha: 0, baseWidth: 0, mode: 'source-over', dynamic: false, isNone: true },
         calligraphy: { color: '#1a202c', alpha: 1.0, baseWidth: 6, mode: 'source-over', dynamic: true },
         highlighter: { color: '#fef08a', alpha: 0.2, baseWidth: 25, mode: 'multiply', dynamic: false },
         annotation: { color: '#e53e3e', alpha: 1.0, baseWidth: 3, mode: 'source-over', dynamic: false },
-        whiteout: { color: '#f7fafc', alpha: 1.0, baseWidth: 30, mode: 'source-over', dynamic: false }, // Matches bg-light
-        pan: { color: 'transparent', alpha: 0, baseWidth: 0, mode: 'source-over', dynamic: false, isPan: true }
+        whiteout: { color: '#f7fafc', alpha: 1.0, baseWidth: 30, mode: 'source-over', dynamic: false } // Matches bg-light
     };
 
     function resizeCanvas() {
@@ -331,11 +332,13 @@
             e.target.classList.add('active');
             currentTool = e.target.dataset.tool;
 
-            if (currentTool === 'pan') {
+            if (currentTool === 'none') {
                 annotationCanvas.style.touchAction = 'auto';
+                annotationCanvas.style.pointerEvents = 'none';
                 annotationCanvas.style.cursor = 'default';
             } else {
                 annotationCanvas.style.touchAction = 'none';
+                annotationCanvas.style.pointerEvents = 'auto';
                 annotationCanvas.style.cursor = 'crosshair';
             }
         });
@@ -452,8 +455,8 @@
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         return {
-            x: clientX - rect.left + window.scrollX,
-            y: clientY - rect.top + window.scrollY
+            x: clientX - rect.left,
+            y: clientY - rect.top
         };
     }
 
@@ -465,7 +468,7 @@
     // --- Touch gesture state machine ---
     annotationCanvas.addEventListener('touchstart', function(e) {
         // Pan tool: let browser handle natively
-        if (currentTool === 'pan') return;
+        if (currentTool === 'none') return;
 
         // Two or more fingers → always scroll
         if (e.touches.length >= 2) {
@@ -493,7 +496,7 @@
     }, {passive: true});
 
     annotationCanvas.addEventListener('touchmove', function(e) {
-        if (currentTool === 'pan') return;
+        if (currentTool === 'none') return;
 
         // Second finger added mid-gesture → switch to scrolling
         if (e.touches.length >= 2 && gesture.state !== 'scrolling') {
@@ -523,7 +526,7 @@
     }, {passive: false});
 
     annotationCanvas.addEventListener('touchend', function(e) {
-        if (currentTool === 'pan') return;
+        if (currentTool === 'none') return;
         cancelHoldTimer();
 
         if (gesture.state === 'drawing') {
