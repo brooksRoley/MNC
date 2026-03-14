@@ -284,7 +284,18 @@
     let isDrawing = false;
     let lastX = 0; let lastY = 0;
     let lastTime = 0;
-    
+
+    // Gesture discrimination state machine (touch devices)
+    const GESTURE_HOLD_DELAY = 180;   // ms before touch = "draw"
+    const GESTURE_MOVE_THRESHOLD = 8; // px before touch = "scroll"
+    const gesture = {
+        state: 'idle',  // 'idle' | 'undecided' | 'drawing' | 'scrolling'
+        startX: 0, startY: 0, startTime: 0,
+        holdTimer: null,
+        scrollVelocities: [], lastScrollY: 0, lastScrollTime: 0,
+        momentumRAF: null
+    };
+
     // Tool settings
     let currentTool = 'calligraphy';
     const tools = {
@@ -346,7 +357,6 @@
 
     function draw(e) {
         if (!isDrawing) return;
-        e.preventDefault(); // Prevent scrolling while drawing on mobile
         const pos = getPos(e);
         const currentTime = Date.now();
         
@@ -379,6 +389,64 @@
 
     function stopDrawing() { isDrawing = false; }
 
+    // --- Gesture helpers ---
+    function cancelHoldTimer() {
+        if (gesture.holdTimer) {
+            clearTimeout(gesture.holdTimer);
+            gesture.holdTimer = null;
+        }
+    }
+
+    function cancelMomentum() {
+        if (gesture.momentumRAF) {
+            cancelAnimationFrame(gesture.momentumRAF);
+            gesture.momentumRAF = null;
+        }
+    }
+
+    function initScrollTracking(e) {
+        cancelMomentum();
+        const touch = e.touches[0];
+        gesture.lastScrollY = touch.clientY;
+        gesture.lastScrollTime = performance.now();
+        gesture.scrollVelocities = [];
+    }
+
+    function manualScroll(e) {
+        const touch = e.touches[0];
+        const now = performance.now();
+        const deltaY = gesture.lastScrollY - touch.clientY;
+
+        window.scrollBy(0, deltaY);
+
+        // Track velocity samples from last ~100ms
+        gesture.scrollVelocities.push({ v: deltaY / (now - gesture.lastScrollTime || 1), t: now });
+        const cutoff = now - 100;
+        gesture.scrollVelocities = gesture.scrollVelocities.filter(s => s.t >= cutoff);
+
+        gesture.lastScrollY = touch.clientY;
+        gesture.lastScrollTime = now;
+    }
+
+    function beginMomentumScroll() {
+        if (gesture.scrollVelocities.length === 0) return;
+        let avgV = gesture.scrollVelocities.reduce((sum, s) => sum + s.v, 0) / gesture.scrollVelocities.length;
+        const friction = 0.95;
+
+        function step() {
+            avgV *= friction;
+            if (Math.abs(avgV) < 0.05) return;
+
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            const atBounds = (window.scrollY <= 0 && avgV < 0) || (window.scrollY >= maxScroll && avgV > 0);
+            if (atBounds) return;
+
+            window.scrollBy(0, avgV);
+            gesture.momentumRAF = requestAnimationFrame(step);
+        }
+        gesture.momentumRAF = requestAnimationFrame(step);
+    }
+
     function getPos(e) {
         const rect = annotationCanvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -394,9 +462,85 @@
     annotationCanvas.addEventListener('mouseup', stopDrawing);
     annotationCanvas.addEventListener('mouseout', stopDrawing);
     
-    annotationCanvas.addEventListener('touchstart', startDrawing, {passive: false});
-    annotationCanvas.addEventListener('touchmove', draw, {passive: false});
-    annotationCanvas.addEventListener('touchend', stopDrawing);
+    // --- Touch gesture state machine ---
+    annotationCanvas.addEventListener('touchstart', function(e) {
+        // Pan tool: let browser handle natively
+        if (currentTool === 'pan') return;
+
+        // Two or more fingers → always scroll
+        if (e.touches.length >= 2) {
+            cancelHoldTimer();
+            if (gesture.state === 'drawing') { stopDrawing(); }
+            gesture.state = 'scrolling';
+            initScrollTracking(e);
+            return;
+        }
+
+        const touch = e.touches[0];
+        gesture.state = 'undecided';
+        gesture.startX = touch.clientX;
+        gesture.startY = touch.clientY;
+        gesture.startTime = performance.now();
+
+        // Start hold timer — if finger stays still, begin drawing
+        gesture.holdTimer = setTimeout(() => {
+            if (gesture.state !== 'undecided') return;
+            gesture.state = 'drawing';
+            startDrawing(e);
+            // Haptic feedback if available
+            if (navigator.vibrate) navigator.vibrate(15);
+        }, GESTURE_HOLD_DELAY);
+    }, {passive: true});
+
+    annotationCanvas.addEventListener('touchmove', function(e) {
+        if (currentTool === 'pan') return;
+
+        // Second finger added mid-gesture → switch to scrolling
+        if (e.touches.length >= 2 && gesture.state !== 'scrolling') {
+            cancelHoldTimer();
+            if (gesture.state === 'drawing') { stopDrawing(); }
+            gesture.state = 'scrolling';
+            initScrollTracking(e);
+        }
+
+        if (gesture.state === 'undecided') {
+            const dx = e.touches[0].clientX - gesture.startX;
+            const dy = e.touches[0].clientY - gesture.startY;
+            if (Math.sqrt(dx * dx + dy * dy) > GESTURE_MOVE_THRESHOLD) {
+                cancelHoldTimer();
+                gesture.state = 'scrolling';
+                initScrollTracking(e);
+            }
+        }
+
+        if (gesture.state === 'drawing') {
+            e.preventDefault();
+            draw(e);
+        } else if (gesture.state === 'scrolling') {
+            e.preventDefault();
+            manualScroll(e);
+        }
+    }, {passive: false});
+
+    annotationCanvas.addEventListener('touchend', function(e) {
+        if (currentTool === 'pan') return;
+        cancelHoldTimer();
+
+        if (gesture.state === 'drawing') {
+            stopDrawing();
+        } else if (gesture.state === 'scrolling') {
+            beginMomentumScroll();
+        }
+        gesture.state = 'idle';
+    }, {passive: true});
+
+    annotationCanvas.addEventListener('touchcancel', function(e) {
+        cancelHoldTimer();
+        cancelMomentum();
+        stopDrawing();
+        gesture.state = 'idle';
+        gesture.scrollVelocities = [];
+    }, {passive: true});
 
     // --- Zen Garden Engine (Fabric.js) ---
     const bgCanvas = document.getElementById('bg-canvas');
